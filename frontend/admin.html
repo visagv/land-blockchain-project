@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Officer Panel — LandChain</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <nav>
+    <a href="index.html" class="brand">
+      <svg class="seal-mark" viewBox="0 0 40 40" width="26" height="26" aria-hidden="true">
+        <circle cx="20" cy="20" r="18" fill="none" stroke="currentColor" stroke-width="1.6" />
+        <circle cx="20" cy="20" r="13.5" fill="none" stroke="currentColor" stroke-width="1" />
+        <path d="M13 20.5l5 5 9-11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+      LandChain <span class="tag">Officer</span>
+    </a>
+    <div class="links"><a href="#" onclick="logout()">Logout</a></div>
+  </nav>
+
+  <div class="container wide">
+    <h1>All Submitted Documents</h1>
+    <p class="subtitle" id="welcomeMsg"></p>
+    <p id="loadingMsg" style="font-size:13px;color:#64748b;"></p>
+
+    <table id="docsTable">
+      <thead>
+        <tr>
+          <th>Citizen</th>
+          <th>Land ID</th>
+          <th>File</th>
+          <th>Status</th>
+          <th>Remarks</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="docsBody">
+        <tr><td colspan="6">Loading...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    const user = requireLogin("officer");
+    if (user) {
+      document.getElementById("welcomeMsg").textContent = "Welcome, Officer " + user.name;
+      loadDocuments();
+    }
+
+    async function loadDocuments() {
+      try {
+        const res = await fetch("/api/documents/all", {
+          headers: { Authorization: "Bearer " + getToken() },
+        });
+        const docs = await res.json();
+
+        const tbody = document.getElementById("docsBody");
+        if (docs.length === 0) {
+          tbody.innerHTML =
+            '<tr><td colspan="6" style="color:var(--soft);">No submissions waiting on review.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = docs
+          .map(
+            (d) => `
+          <tr>
+            <td>${d.owner ? d.owner.name : "Unknown"}</td>
+            <td>${d.landId}</td>
+            <td><a href="/uploads/${d.filePath.split(/[\\/]/).pop()}" target="_blank">${d.fileName}</a></td>
+            <td><span class="badge ${d.status}">${d.status}</span></td>
+            <td>${d.remarks || "-"}</td>
+            <td>
+              ${
+                d.status === "pending" || d.status === "flagged"
+                  ? `<button class="small-btn" style="background:#16a34a;" onclick="approveDoc('${d._id}')">Approve</button>
+                     <button class="small-btn" style="background:#dc2626;" onclick="rejectDoc('${d._id}')">Reject</button>`
+                  : "-"
+              }
+            </td>
+          </tr>
+        `
+          )
+          .join("");
+      } catch (err) {
+        document.getElementById("docsBody").innerHTML =
+          '<tr><td colspan="6">Failed to load documents.</td></tr>';
+      }
+    }
+
+    async function approveDoc(id) {
+      document.getElementById("loadingMsg").textContent =
+        "Generating SHA-256 hash and recording on blockchain... please wait.";
+      try {
+        const res = await fetch(`/api/documents/${id}/approve`, {
+          method: "PUT",
+          headers: { Authorization: "Bearer " + getToken() },
+        });
+        const data = await res.json();
+        document.getElementById("loadingMsg").textContent = "";
+        if (res.ok) {
+          alert("Approved! Blockchain Tx Hash: " + data.document.blockchainTxHash);
+          loadDocuments();
+        } else {
+          alert("Error: " + data.message);
+        }
+      } catch (err) {
+        document.getElementById("loadingMsg").textContent = "";
+        alert("Failed to approve. Check backend/blockchain connection.");
+      }
+    }
+
+    async function rejectDoc(id) {
+      const remarks = prompt("Reason for rejection:");
+      try {
+        const res = await fetch(`/api/documents/${id}/reject`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + getToken(),
+          },
+          body: JSON.stringify({ remarks }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          loadDocuments();
+        } else {
+          alert("Error: " + data.message);
+        }
+      } catch (err) {
+        alert("Failed to reject.");
+      }
+    }
+  </script>
+</body>
+</html>

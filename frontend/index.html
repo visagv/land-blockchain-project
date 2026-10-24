@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>LandChain — Land Document Verification</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <nav>
+    <a href="index.html" class="brand">
+      <svg class="seal-mark" viewBox="0 0 40 40" width="26" height="26" aria-hidden="true">
+        <circle cx="20" cy="20" r="18" fill="none" stroke="currentColor" stroke-width="1.6" />
+        <circle cx="20" cy="20" r="13.5" fill="none" stroke="currentColor" stroke-width="1" />
+        <path d="M13 20.5l5 5 9-11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+      LandChain
+    </a>
+    <div class="links">
+      <a href="index.html">Home</a>
+      <a href="ledger.html">Blockchain</a>
+      <a href="verify.html">Public Verify</a>
+      <a href="login.html">Login</a>
+      <a href="register.html">Register</a>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <div>
+      <h1>Prove a land record hasn't been quietly altered.</h1>
+      <p class="lede">
+        Upload a deed, a Land Officer verifies it, and its fingerprint is sealed
+        on-chain — permanently checkable by anyone, at any time, from any copy.
+      </p>
+      <div class="actions">
+        <button onclick="window.location.href='register.html'">Get started</button>
+        <button onclick="window.location.href='verify.html'" style="background:transparent; border:1.5px solid var(--ink); color:var(--ink);">
+          Verify a document
+        </button>
+      </div>
+    </div>
+
+    <div class="stamp-wrap">
+      <svg class="stamp-graphic" viewBox="0 0 240 240" aria-hidden="true">
+        <path id="stampCircle" d="M 20,120 a 100,100 0 1,1 200,0 a 100,100 0 1,1 -200,0" fill="none" />
+        <text>
+          <textPath href="#stampCircle" startOffset="2%">Verified on chain &#8226; Verified on chain &#8226; </textPath>
+        </text>
+        <circle cx="120" cy="120" r="66" fill="none" stroke="#34573c" stroke-width="2" />
+        <path d="M88 121 l23 23 44-50" fill="none" stroke="#34573c" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+    </div>
+  </section>
+
+  <section class="steps">
+    <div class="step">
+      <div class="step-no">Citizen</div>
+      <h3>Upload the document</h3>
+      <p>A citizen submits a land document along with its Land ID or survey number.</p>
+    </div>
+    <div class="step">
+      <div class="step-no">Land Officer</div>
+      <h3>Officer verifies it</h3>
+      <p>An authorized officer reviews the record and approves or rejects the claim.</p>
+    </div>
+    <div class="step">
+      <div class="step-no">Blockchain</div>
+      <h3>Hash is sealed on-chain</h3>
+      <p>A SHA-256 fingerprint is stored on-chain, so any later edit is detectable.</p>
+    </div>
+  </section>
+</body>
+</html>
