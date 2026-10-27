@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Verify a Document — LandChain</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <nav>
+    <a href="index.html" class="brand">
+      <svg class="seal-mark" viewBox="0 0 40 40" width="26" height="26" aria-hidden="true">
+        <circle cx="20" cy="20" r="18" fill="none" stroke="currentColor" stroke-width="1.6" />
+        <circle cx="20" cy="20" r="13.5" fill="none" stroke="currentColor" stroke-width="1" />
+        <path d="M13 20.5l5 5 9-11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+      LandChain
+    </a>
+    <div class="links">
+      <a href="index.html">Home</a>
+      <a href="login.html">Login</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h1>Public Document Verification</h1>
+    <p class="subtitle">
+      Anyone can check if a land document matches the officially verified,
+      tamper-proof record stored on the blockchain. No login required.
+    </p>
+
+    <form id="verifyForm">
+      <label>Land ID / Survey Number</label>
+      <input type="text" id="landId" required />
+
+      <label>Upload the Document to Check</label>
+      <input type="file" id="document" accept=".pdf,.jpg,.jpeg,.png" required />
+
+      <button type="submit">Verify</button>
+    </form>
+
+    <div id="resultBox" style="display:none;">
+      <div id="resultStamp" class="result-stamp">
+        <div id="stampTitle" class="stamp-title"></div>
+        <div id="stampSub" class="stamp-sub"></div>
+      </div>
+      <div id="hashDetails" style="font-size:13px; margin-top:14px;"></div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    document.getElementById("verifyForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const landId = document.getElementById("landId").value.trim();
+      const le = landIdError(landId);
+      if (le) {
+        document.getElementById("resultBox").style.display = "block";
+        document.getElementById("resultStamp").className = "result-stamp mismatch";
+        document.getElementById("stampTitle").textContent = "Invalid Land ID";
+        document.getElementById("stampSub").textContent = le;
+        document.getElementById("hashDetails").innerHTML = "";
+        return;
+      }
+      const fileInput = document.getElementById("document");
+
+      const formData = new FormData();
+      formData.append("landId", landId);
+      formData.append("document", fileInput.files[0]);
+
+      const resultBox = document.getElementById("resultBox");
+      const stamp = document.getElementById("resultStamp");
+      const title = document.getElementById("stampTitle");
+      const sub = document.getElementById("stampSub");
+      const details = document.getElementById("hashDetails");
+
+      stamp.className = "result-stamp";
+      title.textContent = "Checking the blockchain record…";
+      sub.textContent = "";
+      resultBox.style.display = "block";
+      details.innerHTML = "";
+
+      try {
+        const res = await fetch("/api/documents/verify", {
+          method: "POST",
+          body: formData,
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          stamp.className = "result-stamp mismatch";
+          title.textContent = "Could not verify";
+          sub.textContent = data.message;
+          return;
+        }
+
+        if (data.result === "VERIFIED_UNCHANGED") {
+          stamp.className = "result-stamp verified";
+          title.textContent = "Verified — unchanged";
+          sub.textContent = "This document matches the record sealed on-chain. No tampering detected.";
+        } else {
+          stamp.className = "result-stamp mismatch";
+          title.textContent = "Mismatch detected";
+          sub.textContent = "This file's fingerprint does not match the verified blockchain record.";
+        }
+
+        details.innerHTML = `
+          <div style="color:var(--soft);">Stored hash (blockchain)</div>
+          <div class="hash-box">${data.storedHash}</div>
+          <div style="margin-top:10px; color:var(--soft);">Uploaded file hash</div>
+          <div class="hash-box">${data.uploadedFileHash}</div>
+          <div class="block" style="margin-top:18px">
+            <b>Blockchain proof</b>
+            <div class="row">Block number: <code>${(data.proof && data.proof.blockNumber) ?? "-"}</code></div>
+            <div class="row">Transaction: <code>${(data.proof && data.proof.txHash) || "-"}</code></div>
+            <div class="row">Recorded by: <code>${data.proof && data.proof.recordedBy}</code></div>
+            <div class="row">Time: <code>${new Date(data.blockchainTimestamp * 1000).toLocaleString()}</code></div>
+            <div class="row">${data.result === "VERIFIED_UNCHANGED" ? "Both hashes are identical, so the file is unchanged." : "The hashes differ, so the file is not the one the officer approved."}</div>
+          </div>
+        `;
+      } catch (err) {
+        stamp.className = "result-stamp mismatch";
+        title.textContent = "Could not verify";
+        sub.textContent = "Could not connect to server.";
+      }
+    });
+  </script>
+</body>
+</html>
