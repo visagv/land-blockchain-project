@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Blockchain — LandChain</title><link rel="stylesheet" href="css/style.css"/></head>
+<body>
+<nav><a href="index.html" class="brand"><svg class="seal-mark" viewBox="0 0 40 40" width="26" height="26"><circle cx="20" cy="20" r="18" fill="none" stroke="currentColor" stroke-width="2"/><path d="M13 20.5l5 5 9-11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>LandChain</a>
+<div class="links"><a href="verify.html">Public Verify</a><a href="login.html">Login</a></div></nav>
+<div class="container wide">
+  <h1>Blockchain ledger</h1>
+  <p class="subtitle">Each approval writes the document's hash into a block. Records can be added, never changed — each block points to the one before it.</p>
+  <div id="status"></div>
+  <div id="blocks"><p class="subtitle">Loading…</p></div>
+</div>
+<script src="js/api.js"></script>
+<script>
+const chip=(ok,t)=>`<span class="chip ${ok?"ok":"bad"}">${t}</span>`;
+fetch("/api/health").then(r=>r.json()).then(h=>{
+  document.getElementById("status").innerHTML=
+    chip(h.server,"Server")+chip(h.mongo,"Database")+chip(h.chain,"Blockchain"+(h.chain?" · block "+h.latestBlock:""))+chip(h.contractDeployed,"Smart contract");
+}).catch(()=>{document.getElementById("status").innerHTML=chip(false,"Server not reachable")});
+fetch("/api/ledger").then(r=>r.json()).then(rows=>{
+  const el=document.getElementById("blocks");
+  if(!Array.isArray(rows)){el.innerHTML=`<div class="msg error">${rows.message}</div>`;return;}
+  if(!rows.length){el.innerHTML='<p class="subtitle">No records on the chain yet. Approve a document to write the first one.</p>';return;}
+  el.innerHTML=rows.map(r=>`<div class="block"><b>Block #${r.blockNumber}</b> &nbsp;·&nbsp; Land ID ${r.landId} &nbsp;·&nbsp; ${new Date(r.timestamp*1000).toLocaleString()}
+    <div class="row">Document hash: <code>${r.documentHash}</code></div>
+    <div class="row">Block hash: <code>${r.blockHash}</code></div>
+    <div class="row">Previous block: <code>${r.parentHash}</code></div>
+    <div class="row">Transaction: <code>${r.txHash}</code></div></div>`).join("");
+});
+</script></body></html>

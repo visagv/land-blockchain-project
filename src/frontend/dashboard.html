@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>My Documents — LandChain</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <nav>
+    <a href="index.html" class="brand">
+      <svg class="seal-mark" viewBox="0 0 40 40" width="26" height="26" aria-hidden="true">
+        <circle cx="20" cy="20" r="18" fill="none" stroke="currentColor" stroke-width="1.6" />
+        <circle cx="20" cy="20" r="13.5" fill="none" stroke="currentColor" stroke-width="1" />
+        <path d="M13 20.5l5 5 9-11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+      LandChain
+    </a>
+    <div class="links">
+      <a href="upload.html">Upload Document</a>
+      <a href="verify.html">Public Verify</a>
+      <a href="#" onclick="logout()">Logout</a>
+    </div>
+  </nav>
+
+  <div class="container wide">
+    <h1>My Documents</h1>
+    <p class="subtitle" id="welcomeMsg"></p>
+
+    <table id="docsTable">
+      <thead>
+        <tr>
+          <th>Land ID</th>
+          <th>File</th>
+          <th>Status</th>
+          <th>Remarks</th>
+          <th>Document Hash</th>
+        </tr>
+      </thead>
+      <tbody id="docsBody">
+        <tr><td colspan="5">Loading...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    const user = requireLogin("citizen");
+    if (user) {
+      document.getElementById("welcomeMsg").textContent = "Welcome, " + user.name;
+      loadDocuments();
+    }
+
+    async function loadDocuments() {
+      try {
+        const res = await fetch("/api/documents/my-documents", {
+          headers: { Authorization: "Bearer " + getToken() },
+        });
+        const docs = await res.json();
+
+        const tbody = document.getElementById("docsBody");
+        if (docs.length === 0) {
+          tbody.innerHTML =
+            '<tr><td colspan="5" style="color:var(--soft);">Nothing uploaded yet — start with your first land document.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = docs
+          .map(
+            (d) => `
+          <tr>
+            <td>${d.landId}</td>
+            <td>${d.fileName}</td>
+            <td><span class="badge ${d.status}">${d.status}</span></td>
+            <td>${d.remarks || "-"}</td>
+            <td>${d.documentHash ? `<div class="hash-box">${d.documentHash}</div>` : "-"}</td>
+          </tr>
+        `
+          )
+          .join("");
+      } catch (err) {
+        document.getElementById("docsBody").innerHTML =
+          '<tr><td colspan="5">Failed to load documents.</td></tr>';
+      }
+    }
+  </script>
+</body>
+</html>

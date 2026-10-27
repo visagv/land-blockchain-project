@@ -222,3 +222,7 @@ __marimo__/
 # Hardhat
 artifacts/
 cache/
+
+# Uploaded documents
+src/backend/uploads/*
+!src/backend/uploads/.gitkeep
